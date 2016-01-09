@@ -1,5 +1,8 @@
 {
   "version": "1.0.0-*",
+  "compilationOptions": {
+    "warningsAsErrors": true
+  },
   "dependencies": {
     "Microsoft.AspNet.Buffering": "1.0.0-rc1-final",
     "Microsoft.AspNet.TestHost": "1.0.0-rc1-final",
@@ -9,6 +12,7 @@
     "test": "xunit.runner.aspnet"
   },
   "frameworks": {
+<<<<<<< HEAD
     "dnx451": {},
     "dnxcore50": {
       "dependencies": {
@@ -17,5 +21,9 @@
         "System.Threading": "4.0.11-beta-23516"
       }
     }
+=======
+    "dnx451": { },
+    "dnxcore50": {}
+>>>>>>> refs/remotes/aspnet/dev
   }
 }

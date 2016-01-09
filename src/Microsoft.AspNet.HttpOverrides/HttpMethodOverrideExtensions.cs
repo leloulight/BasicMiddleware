@@ -1,7 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.AspNet.HttpOverrides;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNet.Builder
 {
@@ -14,7 +16,12 @@ namespace Microsoft.AspNet.Builder
         /// <returns></returns>
         public static IApplicationBuilder UseHttpMethodOverride(this IApplicationBuilder builder)
         {
-            return builder.Use(next => new HttpMethodOverrideMiddleware(next).Invoke);
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            return builder.UseMiddleware<HttpMethodOverrideMiddleware>();
         }
 
         /// <summary>
@@ -23,9 +30,18 @@ namespace Microsoft.AspNet.Builder
         /// <param name="builder"></param>
         /// <param name="formFieldInput">Denotes the element that contains the name of the resulting method type.</param>
         /// <returns></returns>
-        public static IApplicationBuilder UseHttpMethodOverride(this IApplicationBuilder builder, string formFieldInput)
+        public static IApplicationBuilder UseHttpMethodOverride(this IApplicationBuilder builder, HttpMethodOverrideOptions options)
         {
-            return builder.Use(next => new HttpMethodOverrideMiddleware(next, formFieldInput).Invoke);
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            return builder.UseMiddleware<HttpMethodOverrideMiddleware>(Options.Create(options));
         }
     }
 }

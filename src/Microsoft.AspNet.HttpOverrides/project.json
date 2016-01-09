@@ -10,6 +10,7 @@
     "url": "git://github.com/aspnet/basicmiddleware"
   },
   "dependencies": {
+<<<<<<< HEAD
     "Microsoft.AspNet.Http.Extensions": "1.0.0-rc1-final"
   },
   "frameworks": {
@@ -21,5 +22,13 @@
         "System.Threading": "4.0.11-beta-23516"
       }
     }
+=======
+    "Microsoft.AspNet.Http.Extensions": "1.0.0-*",
+    "Microsoft.Extensions.Options": "1.0.0-*"
+  },
+  "frameworks": {
+    "net451": { },
+    "dotnet5.4": { }
+>>>>>>> refs/remotes/aspnet/dev
   }
 }

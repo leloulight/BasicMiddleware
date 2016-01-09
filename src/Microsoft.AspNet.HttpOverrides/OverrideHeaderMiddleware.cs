@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Http;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNet.HttpOverrides
 {
@@ -14,48 +15,64 @@ namespace Microsoft.AspNet.HttpOverrides
         private const string XForwardedForHeaderName = "X-Forwarded-For";
         private const string XForwardedHostHeaderName = "X-Forwarded-Host";
         private const string XForwardedProtoHeaderName = "X-Forwarded-Proto";
-        private const string XOriginalIPName = "X-Original-IP";
+        private const string XOriginalForName = "X-Original-For";
         private const string XOriginalHostName = "X-Original-Host";
         private const string XOriginalProtoName = "X-Original-Proto";
-        private readonly OverrideHeaderMiddlewareOptions _options;
+        private readonly OverrideHeaderOptions _options;
         private readonly RequestDelegate _next;
 
-        public OverrideHeaderMiddleware(RequestDelegate next, OverrideHeaderMiddlewareOptions options)
+        public OverrideHeaderMiddleware(RequestDelegate next, IOptions<OverrideHeaderOptions> options)
         {
             if (next == null)
             {
                 throw new ArgumentNullException(nameof(next));
             }
-
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
 
-            _options = options;
+            _options = options.Value;
             _next = next;
         }
 
         public Task Invoke(HttpContext context)
+        {
+            UpdateRemoteIp(context);
+
+            UpdateHost(context);
+
+            UpdateScheme(context);
+
+            return _next(context);
+        }
+
+        private void UpdateRemoteIp(HttpContext context)
         {
             if ((_options.ForwardedOptions & ForwardedHeaders.XForwardedFor) != 0)
             {
                 var xForwardedForHeaderValue = context.Request.Headers.GetCommaSeparatedValues(XForwardedForHeaderName);
                 if (xForwardedForHeaderValue != null && xForwardedForHeaderValue.Length > 0)
                 {
-                    IPAddress ipFromHeader;
-                    if (IPAddress.TryParse(xForwardedForHeaderValue[0], out ipFromHeader))
+                    IPEndPoint endpoint;
+                    if (IPEndPointParser.TryParse(xForwardedForHeaderValue[0], out endpoint))
                     {
-                        var remoteIPString = context.Connection.RemoteIpAddress?.ToString();
-                        if (!string.IsNullOrEmpty(remoteIPString))
+                        var connection = context.Connection;
+                        var remoteIP = connection.RemoteIpAddress;
+                        if (remoteIP != null)
                         {
-                            context.Request.Headers[XOriginalIPName] = remoteIPString;
+                            var remoteIPString = new IPEndPoint(remoteIP, connection.RemotePort).ToString();
+                            context.Request.Headers[XOriginalForName] = remoteIPString;
                         }
-                        context.Connection.RemoteIpAddress = ipFromHeader;
+                        connection.RemoteIpAddress = endpoint.Address;
+                        connection.RemotePort = endpoint.Port;
                     }
                 }
             }
+        }
 
+        private void UpdateHost(HttpContext context)
+        {
             if ((_options.ForwardedOptions & ForwardedHeaders.XForwardedHost) != 0)
             {
                 var xForwardHostHeaderValue = context.Request.Headers[XForwardedHostHeaderName];
@@ -69,7 +86,10 @@ namespace Microsoft.AspNet.HttpOverrides
                     context.Request.Host = HostString.FromUriComponent(xForwardHostHeaderValue);
                 }
             }
+        }
 
+        private void UpdateScheme(HttpContext context)
+        {
             if ((_options.ForwardedOptions & ForwardedHeaders.XForwardedProto) != 0)
             {
                 var xForwardProtoHeaderValue = context.Request.Headers[XForwardedProtoHeaderName];
@@ -82,8 +102,6 @@ namespace Microsoft.AspNet.HttpOverrides
                     context.Request.Scheme = xForwardProtoHeaderValue;
                 }
             }
-
-            return _next(context);
         }
     }
 }
